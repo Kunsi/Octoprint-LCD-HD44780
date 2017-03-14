@@ -1,12 +1,15 @@
 # coding=utf-8
 
 import future
+from builtins import chr
 
 __author__ = "Felix Kunsmann <felix@kunsmann.eu>"
 __license__ = "GNU Affero General Public License http://www.gnu.org/licenses/agpl.html"
 __copyright__ = "Copyright (C) 2017 Felix Kunsmann - Released under terms of the AGPLv3 License"
 
 import octoprint.plugin
+
+from hd44780_callback import *
 
 import RPi.GPIO as GPIO
 
@@ -35,8 +38,31 @@ class LCD_HD44780(octoprint.plugin.StartupPlugin,
 
         self._lcd = None
 
+        self._custom_heatbed = (
+            0b00000,
+            0b11111,
+            0b10101,
+            0b10101,
+            0b10001,
+            0b10101,
+            0b10101,
+            0b11111,
+        )
+
+        self._custom_tool0 = (
+            0b00000,
+            0b11111,
+            0b10001,
+            0b10111,
+            0b10011,
+            0b10111,
+            0b10001,
+            0b11111,
+        )
+
     def on_settings_initialized(self):
         self._initialize_lcd()
+        self._printer.register_callback(LCD_HD44780_PrinterCallback)
 
     def _gpio_board_to_bcm(self, pin):
         if GPIO.RPI_REVISION == 1:
@@ -90,9 +116,12 @@ class LCD_HD44780(octoprint.plugin.StartupPlugin,
         self._lcd = CharLCD(pin_rs=pin_rs, pin_rw=pin_rw, pin_e=pin_e, pins_data=[pin_d4, pin_d5, pin_d6, pin_d7],
                             numbering_mode=GPIO.getmode(), cols=self.cols, rows=self.rows)
 
+        self._lcd.create_char(0, self._custom_heatbed)
+        self._lcd.create_char(1, self._custom_tool0)
+
         self._lcd.cursor_mode = CursorMode.hide
         self._lcd.clear()
-        self._lcd.write_string('Octoprint-LCD-HD44780\n\rVersion: 0.1')
+        self._lcd.write_string('Octoprint')
 
 __plugin_name__ = "LCD: HD44780-compatible"
 
