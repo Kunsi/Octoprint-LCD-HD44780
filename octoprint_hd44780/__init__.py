@@ -1,7 +1,6 @@
 # coding=utf-8
 
-import future
-from builtins import chr
+from __future__ import absolute_import
 
 __author__ = "Felix Kunsmann <felix@kunsmann.eu>"
 __license__ = "GNU Affero General Public License http://www.gnu.org/licenses/agpl.html"
@@ -9,16 +8,12 @@ __copyright__ = "Copyright (C) 2017 Felix Kunsmann - Released under terms of the
 
 import octoprint.plugin
 
-from hd44780_callback import *
-
 import RPi.GPIO as GPIO
-
-from RPLCD import CharLCD
-from RPLCD import CursorMode
-from RPLCD import cursor
+import time
 
 class LCD_HD44780(octoprint.plugin.StartupPlugin,
-                    octoprint.plugin.SettingsPlugin):
+                    octoprint.plugin.SettingsPlugin,
+                    octoprint.printer.PrinterCallback):
     def __init__(self):
         self._pin_to_gpio_rev1 = [-1, -1, -1, 0, -1, 1, -1, 4, 14, -1, 15, 17, 18, 21, -1, 22, 23, -1, 24, 10, -1, 9, 25, 11, 8, -1, 7, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 ]
         self._pin_to_gpio_rev2 = [-1, -1, -1, 2, -1, 3, -1, 4, 14, -1, 15, 17, 18, 27, -1, 22, 23, -1, 24, 10, -1, 9, 25, 11, 8, -1, 7, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 ]
@@ -26,7 +21,6 @@ class LCD_HD44780(octoprint.plugin.StartupPlugin,
         self._configuredGPIOPins = []
 
         self.pin_rs = 15
-        self.pin_rw = None
         self.pin_e  = 16
         self.pin_d4 = 21
         self.pin_d5 = 22
@@ -36,33 +30,23 @@ class LCD_HD44780(octoprint.plugin.StartupPlugin,
         self.cols = 20
         self.rows = 4
 
-        self._lcd = None
+        self._line1 = ''
+        self._line2 = ''
+        self._line3 = ''
+        self._line4 = ''
 
-        self._custom_heatbed = (
-            0b00000,
-            0b11111,
-            0b10101,
-            0b10101,
-            0b10001,
-            0b10101,
-            0b10101,
-            0b11111,
-        )
+        self._lcd_line1 = 0x80
+        self._lcd_line2 = 0xC0
+        self._lcd_chr   = GPIO.HIGH
+        self._lcd_cmd   = GPIO.LOW
+        self._lcd_pulse = 0.0005
+        self._lcd_delay = 0.0005
 
-        self._custom_tool0 = (
-            0b00000,
-            0b11111,
-            0b10001,
-            0b10111,
-            0b10011,
-            0b10111,
-            0b10001,
-            0b11111,
-        )
+        self._lcd_updating = False
 
     def on_settings_initialized(self):
         self._initialize_lcd()
-        self._printer.register_callback(LCD_HD44780_PrinterCallback)
+        self._printer.register_callback(self)
 
     def _gpio_board_to_bcm(self, pin):
         if GPIO.RPI_REVISION == 1:
@@ -100,28 +84,123 @@ class LCD_HD44780(octoprint.plugin.StartupPlugin,
         if GPIO.getmode() is None:
             GPIO.setmode(GPIO.BOARD)
 
-        pin_rs = self._gpio_get_pin(self.pin_rs)
+        GPIO.setup(self._gpio_get_pin(self.pin_rs), GPIO.OUT)
+        GPIO.setup(self._gpio_get_pin(self.pin_e), GPIO.OUT)
+        GPIO.setup(self._gpio_get_pin(self.pin_d4), GPIO.OUT)
+        GPIO.setup(self._gpio_get_pin(self.pin_d5), GPIO.OUT)
+        GPIO.setup(self._gpio_get_pin(self.pin_d6), GPIO.OUT)
+        GPIO.setup(self._gpio_get_pin(self.pin_d7), GPIO.OUT)
 
-        if self.pin_rw is not None:
-            pin_rw = self._gpio_get_pin(self.pin_rw)
+        self._lcd_send_byte(0x33, self._lcd_cmd)
+        self._lcd_send_byte(0x32, self._lcd_cmd)
+        self._lcd_send_byte(0x28, self._lcd_cmd)
+        self._lcd_send_byte(0x0C, self._lcd_cmd)
+        self._lcd_send_byte(0x06, self._lcd_cmd)
+        self._lcd_send_byte(0x01, self._lcd_cmd)
+
+        self._line1 = 'powered by'
+        self._line2 = 'Octoprint'
+
+        self._lcd_update()
+
+    def _lcd_update(self):
+        if self._lcd_updating:
+            return
+
+        self._lcd_updating = True
+
+        line1 = self._line1.ljust(self.cols, ' ')
+        line2 = self._line2.ljust(self.cols, ' ')
+        line3 = self._line3.ljust(self.cols, ' ')
+        line4 = self._line4.ljust(self.cols, ' ')
+
+        message = line1 + line3
+        self._lcd_send_byte(self._lcd_line1, self._lcd_cmd)
+        for i in range(self.cols*self.rows/2):
+            self._lcd_send_byte(ord(message[i]), self._lcd_chr)
+
+        message = line2 + line4
+        self._lcd_send_byte(self._lcd_line2, self._lcd_cmd)
+        for i in range(self.cols*self.rows/2):
+            self._lcd_send_byte(ord(message[i]), self._lcd_chr)
+
+        self._lcd_updating = False
+
+    def _lcd_send_byte(self, bits, mode):
+        GPIO.output(self.pin_rs, mode)
+        GPIO.output(self.pin_d4, GPIO.LOW)
+        GPIO.output(self.pin_d5, GPIO.LOW)
+        GPIO.output(self.pin_d6, GPIO.LOW)
+        GPIO.output(self.pin_d7, GPIO.LOW)
+        if bits & 0x10 == 0x10:
+            GPIO.output(self.pin_d4, GPIO.HIGH)
+        if bits & 0x20 == 0x20:
+            GPIO.output(self.pin_d5, GPIO.HIGH)
+        if bits & 0x40 == 0x40:
+            GPIO.output(self.pin_d6, GPIO.HIGH)
+        if bits & 0x80 == 0x80:
+            GPIO.output(self.pin_d7, GPIO.HIGH)
+        time.sleep(self._lcd_delay)    
+        GPIO.output(self.pin_e, GPIO.HIGH)  
+        time.sleep(self._lcd_pulse)
+        GPIO.output(self.pin_e, GPIO.LOW)  
+        time.sleep(self._lcd_delay)      
+        GPIO.output(self.pin_d4, GPIO.LOW)
+        GPIO.output(self.pin_d5, GPIO.LOW)
+        GPIO.output(self.pin_d6, GPIO.LOW)
+        GPIO.output(self.pin_d7, GPIO.LOW)
+        if bits&0x01==0x01:
+            GPIO.output(self.pin_d4, GPIO.HIGH)
+        if bits&0x02==0x02:
+            GPIO.output(self.pin_d5, GPIO.HIGH)
+        if bits&0x04==0x04:
+            GPIO.output(self.pin_d6, GPIO.HIGH)
+        if bits&0x08==0x08:
+            GPIO.output(self.pin_d7, GPIO.HIGH)
+        time.sleep(self._lcd_delay)    
+        GPIO.output(self.pin_e, GPIO.HIGH)  
+        time.sleep(self._lcd_pulse)
+        GPIO.output(self.pin_e, GPIO.LOW)  
+        time.sleep(self._lcd_delay) 
+
+    def on_printer_add_log(self, data):
+        pass
+
+    def on_printer_add_message(self, data):
+        pass
+
+    def on_printer_add_temperature(self, data):
+        try:
+            self._line4 = 'E{:3.0f}/{:3.0f}  B{:3.0f}/{:3.0f}'.format(data['tool0']['actual'], data['tool0']['target'], data['bed']['actual'], data['bed']['target'])
+            self._lcd_update()
+        except KeyError:
+            pass
+
+    def on_printer_received_registered_message(self, name, output):
+        pass
+
+    def on_printer_send_current_data(self, data):
+        self._line1 = data['state']['text'][:20].center(20)
+
+        if data['job']['file']['name'] is not None:
+            self._line2 = data['job']['file']['name'][:20]
         else:
-            pin_rw = None
+            self._line2 = ''
 
-        pin_e  = self._gpio_get_pin(self.pin_e)
-        pin_d4 = self._gpio_get_pin(self.pin_d4)
-        pin_d5 = self._gpio_get_pin(self.pin_d5)
-        pin_d6 = self._gpio_get_pin(self.pin_d6)
-        pin_d7 = self._gpio_get_pin(self.pin_d7)
+        if data['progress']['completion'] is not None:
+            self._line3 = '{:6.2f}'.format(data['progress']['completion']) + '%'
 
-        self._lcd = CharLCD(pin_rs=pin_rs, pin_rw=pin_rw, pin_e=pin_e, pins_data=[pin_d4, pin_d5, pin_d6, pin_d7],
-                            numbering_mode=GPIO.getmode(), cols=self.cols, rows=self.rows)
+            if data['progress']['printTimeLeft'] is not None:
+                self._line3 += ' ~' + '{:1.0f}:{:02.0f}'.format(data['progress']['printTimeLeft']/60, data['progress']['printTimeLeft']%60) + 'min '
+        else:
+            self._line3 = ''
 
-        self._lcd.create_char(0, self._custom_heatbed)
-        self._lcd.create_char(1, self._custom_tool0)
+        self._lcd_update()
 
-        self._lcd.cursor_mode = CursorMode.hide
-        self._lcd.clear()
-        self._lcd.write_string('Octoprint')
+    def on_printer_send_initial_data(self, data):
+        self._line1 = ''
+        self._line2 = ''
+        self._lcd_update()
 
 __plugin_name__ = "LCD: HD44780-compatible"
 
