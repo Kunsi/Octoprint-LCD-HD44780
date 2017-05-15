@@ -87,3 +87,7 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+
+
+OctoPrint_LCD_HD44780.egg-info
