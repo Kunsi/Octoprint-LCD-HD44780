@@ -102,8 +102,11 @@ class LCD_HD44780(octoprint.plugin.StartupPlugin,
         self._lcd_send_byte(0x06, self._lcd_cmd)
         self._lcd_send_byte(0x01, self._lcd_cmd)
 
-        self._line1 = 'powered by'
-        self._line2 = 'Octoprint'
+        printerstate = self._printer.get_state_string()
+        self._line1 = printerstate.center(20)
+
+        self._line3 = '    powered by'
+        self._line4 = '      Octoprint'
 
         self._lcd_update()
 
@@ -207,9 +210,7 @@ class LCD_HD44780(octoprint.plugin.StartupPlugin,
         self._lcd_update()
 
     def on_printer_send_initial_data(self, data):
-        self._line1 = ''
-        self._line2 = ''
-        self._lcd_update()
+        pass
 
 __plugin_name__ = "LCD: HD44780-compatible"
 
