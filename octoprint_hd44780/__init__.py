@@ -93,6 +93,8 @@ class LCD_HD44780(octoprint.plugin.StartupPlugin,
         GPIO.setup(self._gpio_get_pin(self.pin_d6), GPIO.OUT)
         GPIO.setup(self._gpio_get_pin(self.pin_d7), GPIO.OUT)
 
+        self._configuredGPIOPins = [self._gpio_get_pin(self.pin_rs), self._gpio_get_pin(self.pin_e), self._gpio_get_pin(self.pin_d4), self._gpio_get_pin(self.pin_d5), self._gpio_get_pin(self.pin_d6), self._gpio_get_pin(self.pin_d7)]
+
         self._lcd_send_byte(0x33, self._lcd_cmd)
         self._lcd_send_byte(0x32, self._lcd_cmd)
         self._lcd_send_byte(0x28, self._lcd_cmd)
