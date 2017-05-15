@@ -30,6 +30,8 @@ class LCD_HD44780(octoprint.plugin.StartupPlugin,
         self.cols = 20
         self.rows = 4
 
+        self._ClosedOrError = False
+
         self._line1 = ''
         self._line2 = ''
         self._line3 = ''
@@ -170,11 +172,9 @@ class LCD_HD44780(octoprint.plugin.StartupPlugin,
         pass
 
     def on_printer_add_temperature(self, data):
-        try:
+        if not self._ClosedOrError:
             self._line4 = 'E{:3.0f}/{:3.0f}  B{:3.0f}/{:3.0f}'.format(data['tool0']['actual'], data['tool0']['target'], data['bed']['actual'], data['bed']['target'])
             self._lcd_update()
-        except KeyError:
-            pass
 
     def on_printer_received_registered_message(self, name, output):
         pass
@@ -182,18 +182,25 @@ class LCD_HD44780(octoprint.plugin.StartupPlugin,
     def on_printer_send_current_data(self, data):
         self._line1 = data['state']['text'][:20].center(20)
 
-        if data['job']['file']['name'] is not None:
-            self._line2 = data['job']['file']['name'][:20]
+        self._ClosedOrError = data['state']['flags']['closedOrError']
+
+        if not self._ClosedOrError:
+            if data['job']['file']['name'] is not None:
+                self._line2 = data['job']['file']['name'][:20]
+            else:
+                self._line2 = ''
+
+            if data['progress']['completion'] is not None:
+                self._line3 = '{:6.2f}'.format(data['progress']['completion']) + '%'
+
+                if data['progress']['printTimeLeft'] is not None:
+                    self._line3 += ' ~' + '{:1.0f}:{:02.0f}'.format(data['progress']['printTimeLeft']/60, data['progress']['printTimeLeft']%60) + 'min '
+            else:
+                self._line3 = ''
         else:
             self._line2 = ''
-
-        if data['progress']['completion'] is not None:
-            self._line3 = '{:6.2f}'.format(data['progress']['completion']) + '%'
-
-            if data['progress']['printTimeLeft'] is not None:
-                self._line3 += ' ~' + '{:1.0f}:{:02.0f}'.format(data['progress']['printTimeLeft']/60, data['progress']['printTimeLeft']%60) + 'min '
-        else:
             self._line3 = ''
+            self._line4 = ''
 
         self._lcd_update()
 
