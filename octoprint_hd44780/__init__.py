@@ -170,19 +170,11 @@ class LCD_HD44780(octoprint.plugin.StartupPlugin,
         GPIO.output(self.pin_e, GPIO.LOW)  
         time.sleep(self._lcd_delay) 
 
-    def on_printer_add_log(self, data):
-        pass
-
-    def on_printer_add_message(self, data):
-        pass
-
     def on_printer_add_temperature(self, data):
         if not self._ClosedOrError:
             self._line4 = 'E{:3.0f}/{:3.0f}  B{:3.0f}/{:3.0f}'.format(data['tool0']['actual'], data['tool0']['target'], data['bed']['actual'], data['bed']['target'])
             self._lcd_update()
 
-    def on_printer_received_registered_message(self, name, output):
-        pass
 
     def on_printer_send_current_data(self, data):
         self._line1 = data['state']['text'][:20].center(20)
@@ -204,13 +196,10 @@ class LCD_HD44780(octoprint.plugin.StartupPlugin,
                 self._line3 = ''
         else:
             self._line2 = ''
-            self._line3 = ''
-            self._line4 = ''
+            self._line3 = '    powered by'
+            self._line4 = '      Octoprint'
 
         self._lcd_update()
-
-    def on_printer_send_initial_data(self, data):
-        pass
 
 __plugin_name__ = "LCD: HD44780-compatible"
 
