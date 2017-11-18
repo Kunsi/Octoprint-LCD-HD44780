@@ -104,9 +104,7 @@ class LCD_HD44780(octoprint.plugin.StartupPlugin,
 
         printerstate = self._printer.get_state_string()
         self._line1 = printerstate.center(20)
-
-        self._line3 = '    powered by'
-        self._line4 = '      Octoprint'
+        self.clear_lower_half()
 
         self._lcd_update()
 
@@ -174,7 +172,8 @@ class LCD_HD44780(octoprint.plugin.StartupPlugin,
         if not self._ClosedOrError:
             self._line4 = 'E{:3.0f}/{:3.0f}  B{:3.0f}/{:3.0f}'.format(data['tool0']['actual'], data['tool0']['target'], data['bed']['actual'], data['bed']['target'])
             self._lcd_update()
-
+        else:
+            self.clear_lower_half()
 
     def on_printer_send_current_data(self, data):
         self._line1 = data['state']['text'][:20].center(20)
@@ -195,11 +194,19 @@ class LCD_HD44780(octoprint.plugin.StartupPlugin,
             else:
                 self._line3 = ''
         else:
-            self._line2 = ''
-            self._line3 = '    powered by'
-            self._line4 = '      Octoprint'
+            self.clear_lower_half()
 
         self._lcd_update()
+
+    def clear_lower_half(self):
+        self._line2 = ''
+        self._line3 = ''
+
+        version = octoprint.server.DISPLAY_VERSION
+        line4 = 'OctoPrint ' + version.split(' ', 1)[0]
+
+        self._line4 = line4.center(20)
+
 
 __plugin_name__ = "LCD: HD44780-compatible"
 
