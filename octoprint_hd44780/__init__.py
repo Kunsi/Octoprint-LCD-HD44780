@@ -2,7 +2,7 @@
 
 from __future__ import absolute_import
 
-__author__ = "Felix Kunsmann <felix@kunsmann.eu>"
+__author__ = "Franziska Kunsmann <hi@kunsmann.eu>"
 __license__ = "GNU Affero General Public License http://www.gnu.org/licenses/agpl.html"
 __copyright__ = "Copyright (C) 2017 Felix Kunsmann - Released under terms of the AGPLv3 License"
 
