@@ -202,8 +202,7 @@ class LCD_HD44780(octoprint.plugin.StartupPlugin,
         self._line2 = ''
         self._line3 = ''
 
-        version = octoprint.server.DISPLAY_VERSION
-        line4 = 'OctoPrint ' + version.split(' ', 1)[0]
+        line4 = 'OctoPrint ' + octoprint.__version__
 
         self._line4 = line4.center(20)
 
