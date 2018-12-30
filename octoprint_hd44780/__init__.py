@@ -46,6 +46,9 @@ class LCD_HD44780(octoprint.plugin.StartupPlugin,
 
         self._lcd_updating = False
 
+        timer = RepeatedTimer(30, self._lcd_update())
+        timer.start()
+
     def on_settings_initialized(self):
         self._initialize_lcd()
         self._printer.register_callback(self)
