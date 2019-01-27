@@ -191,7 +191,7 @@ class LCD_HD44780(octoprint.plugin.StartupPlugin,
                 self._line3 = '{:6.2f}'.format(data['progress']['completion']) + '%'
 
                 if data['progress']['printTimeLeft'] is not None:
-                    self._line3 += ' ~' + '{:1.0f}:{:02.0f}'.format(data['progress']['printTimeLeft']/60, data['progress']['printTimeLeft']%60) + 'min '
+                    self._line3 += ' ~' + '{:1.0f}:{:02.0f}:{:02.0f}'.format(data['progress']['printTimeLeft']/3600, data['progress']['printTimeLeft']%3600/60, data['progress']['printTimeLeft']%60)
             else:
                 self._line3 = ''
         else:
