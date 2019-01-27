@@ -133,40 +133,40 @@ class LCD_HD44780(octoprint.plugin.StartupPlugin,
         self._lcd_updating = False
 
     def _lcd_send_byte(self, bits, mode):
-        GPIO.output(self.pin_rs, mode)
-        GPIO.output(self.pin_d4, GPIO.LOW)
-        GPIO.output(self.pin_d5, GPIO.LOW)
-        GPIO.output(self.pin_d6, GPIO.LOW)
-        GPIO.output(self.pin_d7, GPIO.LOW)
+        GPIO.output(self._gpio_get_pin(self.pin_rs), mode)
+        GPIO.output(self._gpio_get_pin(self.pin_d4), GPIO.LOW)
+        GPIO.output(self._gpio_get_pin(self.pin_d5), GPIO.LOW)
+        GPIO.output(self._gpio_get_pin(self.pin_d6), GPIO.LOW)
+        GPIO.output(self._gpio_get_pin(self.pin_d7), GPIO.LOW)
         if bits & 0x10 == 0x10:
-            GPIO.output(self.pin_d4, GPIO.HIGH)
+            GPIO.output(self._gpio_get_pin(self.pin_d4), GPIO.HIGH)
         if bits & 0x20 == 0x20:
-            GPIO.output(self.pin_d5, GPIO.HIGH)
+            GPIO.output(self._gpio_get_pin(self.pin_d5), GPIO.HIGH)
         if bits & 0x40 == 0x40:
-            GPIO.output(self.pin_d6, GPIO.HIGH)
+            GPIO.output(self._gpio_get_pin(self.pin_d6), GPIO.HIGH)
         if bits & 0x80 == 0x80:
-            GPIO.output(self.pin_d7, GPIO.HIGH)
+            GPIO.output(self._gpio_get_pin(self.pin_d7), GPIO.HIGH)
         time.sleep(self._lcd_delay)    
-        GPIO.output(self.pin_e, GPIO.HIGH)  
+        GPIO.output(self._gpio_get_pin(self.pin_e), GPIO.HIGH)
         time.sleep(self._lcd_pulse)
-        GPIO.output(self.pin_e, GPIO.LOW)  
+        GPIO.output(self._gpio_get_pin(self.pin_e), GPIO.LOW)
         time.sleep(self._lcd_delay)      
-        GPIO.output(self.pin_d4, GPIO.LOW)
-        GPIO.output(self.pin_d5, GPIO.LOW)
-        GPIO.output(self.pin_d6, GPIO.LOW)
-        GPIO.output(self.pin_d7, GPIO.LOW)
+        GPIO.output(self._gpio_get_pin(self.pin_d4), GPIO.LOW)
+        GPIO.output(self._gpio_get_pin(self.pin_d5), GPIO.LOW)
+        GPIO.output(self._gpio_get_pin(self.pin_d6), GPIO.LOW)
+        GPIO.output(self._gpio_get_pin(self.pin_d7), GPIO.LOW)
         if bits&0x01==0x01:
-            GPIO.output(self.pin_d4, GPIO.HIGH)
+            GPIO.output(self._gpio_get_pin(self.pin_d4), GPIO.HIGH)
         if bits&0x02==0x02:
-            GPIO.output(self.pin_d5, GPIO.HIGH)
+            GPIO.output(self._gpio_get_pin(self.pin_d5), GPIO.HIGH)
         if bits&0x04==0x04:
-            GPIO.output(self.pin_d6, GPIO.HIGH)
+            GPIO.output(self._gpio_get_pin(self.pin_d6), GPIO.HIGH)
         if bits&0x08==0x08:
-            GPIO.output(self.pin_d7, GPIO.HIGH)
+            GPIO.output(self._gpio_get_pin(self.pin_d7), GPIO.HIGH)
         time.sleep(self._lcd_delay)    
-        GPIO.output(self.pin_e, GPIO.HIGH)  
+        GPIO.output(self._gpio_get_pin(self.pin_e), GPIO.HIGH)
         time.sleep(self._lcd_pulse)
-        GPIO.output(self.pin_e, GPIO.LOW)  
+        GPIO.output(self._gpio_get_pin(self.pin_e), GPIO.LOW)
         time.sleep(self._lcd_delay) 
 
     def on_printer_add_temperature(self, data):
