@@ -7,7 +7,7 @@ __license__ = "GNU Affero General Public License http://www.gnu.org/licenses/agp
 __copyright__ = "Copyright (C) 2017 Franziska Kunsmann - Released under terms of the AGPLv3 License"
 
 import octoprint.plugin
-
+from octoprint.util import RepeatedTimer
 import RPi.GPIO as GPIO
 import time
 
